@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "harlequin_odbc"
+name = "harlequin-odbc"
 version = "0.1.0"
 description = "A Harlequin adapter for ODBC drivers."
 authors = ["Ted Conbeer <tconbeer@users.noreply.github.com>"]
