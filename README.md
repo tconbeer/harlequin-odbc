@@ -1,6 +1,6 @@
 # harlequin-odbc
 
-This repo provides the ODBC adapter for MySQL.
+This repo provides the ODBC adapter for Harlequin.
 
 ## Installation
 
