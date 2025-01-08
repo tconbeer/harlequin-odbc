@@ -6,12 +6,13 @@ import pytest
 from harlequin.adapter import HarlequinAdapter, HarlequinConnection, HarlequinCursor
 from harlequin.catalog import Catalog, CatalogItem
 from harlequin.exception import HarlequinConnectionError, HarlequinQueryError
+from textual_fastdatatable.backend import create_backend
+
 from harlequin_odbc.adapter import (
     HarlequinOdbcAdapter,
     HarlequinOdbcConnection,
     HarlequinOdbcCursor,
 )
-from textual_fastdatatable.backend import create_backend
 
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
@@ -25,7 +26,7 @@ def test_plugin_discovery() -> None:
     PLUGIN_NAME = "odbc"
     eps = entry_points(group="harlequin.adapter")
     assert eps[PLUGIN_NAME]
-    adapter_cls = eps[PLUGIN_NAME].load()  # type: ignore
+    adapter_cls = eps[PLUGIN_NAME].load()
     assert issubclass(adapter_cls, HarlequinAdapter)
     assert adapter_cls == HarlequinOdbcAdapter
 
