@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
--  Drops support for Python 3.8
--  Adds support for Python 3.13
--  Adds support for Harlequin 2.X
+## [0.2.0] - 2025-01-08
+
+-   Drops support for Python 3.8
+-   Adds support for Python 3.13
+-   Adds support for Harlequin 2.X
 
 ## [0.1.1] - 2024-01-09
 
@@ -20,7 +22,9 @@ All notable changes to this project will be documented in this file.
 
 -   Adds a basic ODBC adapter.
 
-[Unreleased]: https://github.com/tconbeer/harlequin-odbc/compare/0.1.1...HEAD
+[Unreleased]: https://github.com/tconbeer/harlequin-odbc/compare/0.2.0...HEAD
+
+[0.2.0]: https://github.com/tconbeer/harlequin-odbc/compare/0.1.1...0.2.0
 
 [0.1.1]: https://github.com/tconbeer/harlequin-odbc/compare/0.1.0...0.1.1
 
