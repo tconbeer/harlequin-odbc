@@ -7,9 +7,8 @@ services:
       ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: for-testing
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - ./sqlserver_data/data:/var/opt/mssql/data
+      - ./sqlserver_data/log:/var/opt/mssql/log
+      - ./sqlserver_data/secrets:/var/opt/mssql/secrets
     ports:
         - 1433:1433
- 
-volumes:
-  sqlserver_data:

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Sequence
+from contextlib import suppress
+from typing import TYPE_CHECKING, Any, Sequence
 
-import pyodbc  # type: ignore
+import pyodbc
 from harlequin import (
     HarlequinAdapter,
     HarlequinConnection,
@@ -17,7 +18,15 @@ from harlequin.exception import (
 )
 from textual_fastdatatable.backend import AutoBackendType
 
+from harlequin_odbc.catalog import (
+    DatabaseCatalogItem,
+    RelationCatalogItem,
+    SchemaCatalogItem,
+)
 from harlequin_odbc.cli_options import ODBC_OPTIONS
+
+if TYPE_CHECKING:
+    pass
 
 
 class HarlequinOdbcCursor(HarlequinCursor):
@@ -86,7 +95,7 @@ class HarlequinOdbcConnection(HarlequinConnection):
             cur.execute(query)
         except Exception as e:
             raise HarlequinQueryError(
-                msg=str(e),
+                msg=f"{e.__class__.__name__}: {e}",
                 title="Harlequin encountered an error while executing your query.",
             ) from e
         else:
@@ -103,72 +112,48 @@ class HarlequinOdbcConnection(HarlequinConnection):
             for schema, relations in schemas.items():
                 rel_items: list[CatalogItem] = []
                 for rel, rel_type in relations:
-                    cols = self._list_columns_in_relation(
-                        catalog_name=db, schema_name=schema, rel_name=rel
-                    )
-                    col_items = [
-                        CatalogItem(
-                            qualified_identifier=f'"{db}"."{schema}"."{rel}"."{col}"',
-                            query_name=f'"{col}"',
-                            label=col,
-                            type_label=col_type,
-                        )
-                        for col, col_type in cols
-                    ]
                     rel_items.append(
-                        CatalogItem(
-                            qualified_identifier=f'"{db}"."{schema}"."{rel}"',
-                            query_name=f'"{db}"."{schema}"."{rel}"',
+                        RelationCatalogItem.from_label(
                             label=rel,
-                            type_label=rel_type,
-                            children=col_items,
+                            schema_label=schema,
+                            db_label=db,
+                            rel_type=rel_type,
+                            connection=self,
                         )
                     )
                 schema_items.append(
-                    CatalogItem(
-                        qualified_identifier=f'"{db}"."{schema}"',
-                        query_name=f'"{db}"."{schema}"',
+                    SchemaCatalogItem.from_label(
                         label=schema,
-                        type_label="s",
+                        db_label=db,
+                        connection=self,
                         children=rel_items,
                     )
                 )
             db_items.append(
-                CatalogItem(
-                    qualified_identifier=f'"{db}"',
-                    query_name=f'"{db}"',
+                DatabaseCatalogItem.from_label(
                     label=db,
-                    type_label="db",
+                    connection=self,
                     children=schema_items,
                 )
             )
         return Catalog(items=db_items)
 
+    def close(self) -> None:
+        with suppress(Exception):
+            self.conn.close()
+        with suppress(Exception):
+            self.aux_conn.close()
+
     def _list_tables(self) -> dict[str, dict[str, list[tuple[str, str]]]]:
         cur = self.aux_conn.cursor()
-        rel_type_map = {
-            "TABLE": "t",
-            "VIEW": "v",
-            "SYSTEM TABLE": "st",
-            "GLOBAL TEMPORARY": "tmp",
-            "LOCAL TEMPORARY": "tmp",
-        }
         catalog: dict[str, dict[str, list[tuple[str, str]]]] = {}
-        for db_name, schema_name, rel_name, rel_type, *_ in cur.tables():
+        for db_name, schema_name, rel_name, rel_type, *_ in cur.tables(catalog="%"):
             if db_name not in catalog:
-                catalog[db_name] = {
-                    schema_name: [
-                        (rel_name, rel_type_map.get(rel_type, str(rel_type).lower()))
-                    ]
-                }
+                catalog[db_name] = {schema_name: [(rel_name, rel_type)]}
             elif schema_name not in catalog[db_name]:
-                catalog[db_name][schema_name] = [
-                    (rel_name, rel_type_map.get(rel_type, rel_type))
-                ]
+                catalog[db_name][schema_name] = [(rel_name, rel_type)]
             else:
-                catalog[db_name][schema_name].append(
-                    (rel_name, rel_type_map.get(rel_type, rel_type))
-                )
+                catalog[db_name][schema_name].append((rel_name, rel_type))
         return catalog
 
     def _list_columns_in_relation(
