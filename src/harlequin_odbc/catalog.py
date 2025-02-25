@@ -5,16 +5,14 @@ from typing import TYPE_CHECKING, ClassVar
 
 from harlequin.catalog import CatalogItem, InteractiveCatalogItem
 
-# from harlequin_odbc.interactions import (
-#     execute_drop_database_statement,
-#     execute_drop_foreign_table_statement,
-#     execute_drop_schema_statement,
-#     execute_drop_table_statement,
-#     execute_drop_view_statement,
-#     execute_use_statement,
-#     insert_columns_at_cursor,
-#     show_select_star,
-# )
+from harlequin_odbc.interactions import (
+    execute_drop_database_statement,
+    execute_drop_table_statement,
+    execute_drop_view_statement,
+    execute_use_statement,
+    insert_columns_at_cursor,
+    show_select_star,
+)
 
 if TYPE_CHECKING:
     from harlequin_odbc.adapter import HarlequinOdbcConnection
@@ -46,10 +44,10 @@ class ColumnCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
 
 @dataclass
 class RelationCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
-    # INTERACTIONS = [
-    #     ("Insert Columns at Cursor", insert_columns_at_cursor),
-    #     ("Preview Data", show_select_star),
-    # ]
+    INTERACTIONS = [
+        ("Insert Columns at Cursor", insert_columns_at_cursor),
+        ("Preview Data", show_select_star),
+    ]
     TYPE_LABEL: ClassVar[str] = ""
     schema_label: str = ""
     db_label: str = ""
@@ -73,12 +71,12 @@ class RelationCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
 
         item_class = rel_type_map.get(rel_type, TableCatalogItem)
         return item_class(
-            qualified_identifier=f'"{schema_label}"."{label}"',
+            qualified_identifier=f'"{db_label}"."{schema_label}"."{label}"',
             query_name=f'"{schema_label}"."{label}"',
             label=label,
             schema_label=schema_label,
             db_label=db_label,
-            type_label=cls.TYPE_LABEL,
+            type_label=item_class.TYPE_LABEL,
             connection=connection,
         )
 
@@ -99,30 +97,24 @@ class RelationCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
 
 
 class ViewCatalogItem(RelationCatalogItem):
-    # INTERACTIONS = RelationCatalogItem.INTERACTIONS + [
-    #     ("Drop View", execute_drop_view_statement),
-    # ]
+    INTERACTIONS = RelationCatalogItem.INTERACTIONS + [
+        ("Drop View", execute_drop_view_statement),
+    ]
     TYPE_LABEL: ClassVar[str] = "v"
 
 
 class TableCatalogItem(RelationCatalogItem):
-    # INTERACTIONS = RelationCatalogItem.INTERACTIONS + [
-    #     ("Drop Table", execute_drop_table_statement),
-    # ]
+    INTERACTIONS = RelationCatalogItem.INTERACTIONS + [
+        ("Drop Table", execute_drop_table_statement),
+    ]
     TYPE_LABEL: ClassVar[str] = "t"
 
 
 class SystemTableCatalogItem(RelationCatalogItem):
-    # INTERACTIONS = RelationCatalogItem.INTERACTIONS + [
-    #     ("Drop Table", execute_drop_table_statement),
-    # ]
     TYPE_LABEL: ClassVar[str] = "st"
 
 
 class TempTableCatalogItem(TableCatalogItem):
-    # INTERACTIONS = RelationCatalogItem.INTERACTIONS + [
-    #     ("Drop Table", execute_drop_table_statement),
-    # ]
     TYPE_LABEL: ClassVar[str] = "tmp"
 
 
@@ -136,15 +128,13 @@ class LocalTempTableCatalogItem(TempTableCatalogItem):
 
 @dataclass
 class SchemaCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
-    # INTERACTIONS = [
-    #     ("Set Search Path", execute_use_statement),
-    #     ("Drop Schema", execute_drop_schema_statement),
-    # ]
+    db_label: str = ""
 
     @classmethod
     def from_label(
         cls,
         label: str,
+        db_label: str,
         connection: "HarlequinOdbcConnection",
         children: list[CatalogItem] | None = None,
     ) -> "SchemaCatalogItem":
@@ -152,9 +142,10 @@ class SchemaCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
         if children is None:
             children = []
         return cls(
-            qualified_identifier=schema_identifier,
+            qualified_identifier=f'"{db_label}".{schema_identifier}',
             query_name=schema_identifier,
             label=label,
+            db_label=db_label,
             type_label="sch",
             connection=connection,
             children=children,
@@ -163,9 +154,10 @@ class SchemaCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
 
 
 class DatabaseCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
-    # INTERACTIONS = [
-    #     ("Drop Database", execute_drop_database_statement),
-    # ]
+    INTERACTIONS = [
+        ("Use Database", execute_use_statement),
+        ("Drop Database", execute_drop_database_statement),
+    ]
 
     @classmethod
     def from_label(

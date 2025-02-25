@@ -124,6 +124,7 @@ class HarlequinOdbcConnection(HarlequinConnection):
                 schema_items.append(
                     SchemaCatalogItem.from_label(
                         label=schema,
+                        db_label=db,
                         connection=self,
                         children=rel_items,
                     )

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+-   The Data Catalog now displays all databases on the connected server, not just the currently-connected database ([tconbeer/harlequin#415](https://github.com/tconbeer/harlequin/discussions/415)).
+-   Columns in the Data Catalog are now fetched lazily ([#12](https://github.com/tconbeer/harlequin-odbc/issues/12), [#13](https://github.com/tconbeer/harlequin-odbc/issues/13)).
+-   Data Catalog items now support basic interactions ([#14](https://github.com/tconbeer/harlequin-odbc/issues/14)).
+
 ## [0.2.0] - 2025-01-08
 
 -   Drops support for Python 3.8
