@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-03-17
+
 -   Fixes a crash caused by ODBC drivers that return non-standard data from a call to `cursor.tables()` ([tconbeer/harlequin#780](https://github.com/tconbeer/harlequin/issues/780) - thank you [@khalid-talakshi](https://github.com/khalid-talakshi)!).
 
 ## [0.3.0] - 2025-02-25
@@ -30,7 +32,9 @@ All notable changes to this project will be documented in this file.
 
 -   Adds a basic ODBC adapter.
 
-[Unreleased]: https://github.com/tconbeer/harlequin-odbc/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/tconbeer/harlequin-odbc/compare/0.3.1...HEAD
+
+[0.3.1]: https://github.com/tconbeer/harlequin-odbc/compare/0.3.0...0.3.1
 
 [0.3.0]: https://github.com/tconbeer/harlequin-odbc/compare/0.2.0...0.3.0
 
