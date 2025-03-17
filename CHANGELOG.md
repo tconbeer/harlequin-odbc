@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+-   Fixes a crash caused by ODBC drivers that return non-standard data from a call to `cursor.tables()` ([tconbeer/harlequin#780](https://github.com/tconbeer/harlequin/issues/780) - thank you [@khalid-talakshi](https://github.com/khalid-talakshi)!).
+
 ## [0.3.0] - 2025-02-25
 
 -   The Data Catalog now displays all databases on the connected server, not just the currently-connected database ([tconbeer/harlequin#415](https://github.com/tconbeer/harlequin/discussions/415)).
