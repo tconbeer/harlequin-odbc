@@ -148,12 +148,19 @@ class HarlequinOdbcConnection(HarlequinConnection):
         cur = self.aux_conn.cursor()
         catalog: dict[str, dict[str, list[tuple[str, str]]]] = {}
         for db_name, schema_name, rel_name, rel_type, *_ in cur.tables(catalog="%"):
+            if db_name is None:
+                continue
             if db_name not in catalog:
-                catalog[db_name] = {schema_name: [(rel_name, rel_type)]}
-            elif schema_name not in catalog[db_name]:
-                catalog[db_name][schema_name] = [(rel_name, rel_type)]
-            else:
-                catalog[db_name][schema_name].append((rel_name, rel_type))
+                catalog[db_name] = dict()
+
+            if schema_name is None:
+                continue
+            if schema_name not in catalog[db_name]:
+                catalog[db_name][schema_name] = list()
+
+            if rel_name is not None:
+                catalog[db_name][schema_name].append((rel_name, rel_type or ""))
+
         return catalog
 
     def _list_columns_in_relation(
