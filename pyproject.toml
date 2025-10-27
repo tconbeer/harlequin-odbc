@@ -13,7 +13,7 @@ packages = [
 odbc = "harlequin_odbc:HarlequinOdbcAdapter"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.14"
+python = ">=3.9"
 harlequin = ">=1.25,<3"
 pyodbc = "^5.0"
 
