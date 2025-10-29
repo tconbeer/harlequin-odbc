@@ -1,5 +1,5 @@
 import os
-import sys
+from importlib.metadata import entry_points
 from typing import Generator
 
 import pytest
@@ -13,11 +13,6 @@ from harlequin_odbc.adapter import (
     HarlequinOdbcConnection,
     HarlequinOdbcCursor,
 )
-
-if sys.version_info < (3, 10):
-    from importlib_metadata import entry_points
-else:
-    from importlib.metadata import entry_points
 
 CONN_STR = os.environ["ODBC_CONN_STR"]
 

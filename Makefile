@@ -1,9 +1,9 @@
 .PHONY: check
 check:
-	ruff format .
-	ruff check . --fix
-	mypy
-	pytest
+	uv run ruff format .
+	uv run ruff check . --fix
+	uv run mypy
+	uv run pytest
 
 .PHONY: init
 init:
@@ -15,10 +15,10 @@ clean:
 
 .PHONY: serve
 serve:
-	harlequin -P None -a odbc "${ODBC_CONN_STR}"
+	uv run harlequin -P None -a odbc "${ODBC_CONN_STR}"
 
 .PHONY: lint
 lint:
-	ruff format .
-	ruff check . --fix
-	mypy
+	uv run ruff format .
+	uv run ruff check . --fix
+	uv run mypy
