@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+-  Drops support for Python 3.9; adds support for Python 3.14
+-  This project is now built using uv.
+
 ## [0.3.1] - 2025-03-17
 
 -   Fixes a crash caused by ODBC drivers that return non-standard data from a call to `cursor.tables()` ([tconbeer/harlequin#780](https://github.com/tconbeer/harlequin/issues/780) - thank you [@khalid-talakshi](https://github.com/khalid-talakshi)!).
