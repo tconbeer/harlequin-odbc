@@ -18,6 +18,12 @@ TEST_DB_CONN = "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433
 def connection() -> Generator[HarlequinOdbcConnection, None, None]:
     master_conn = pyodbc.connect(MASTER_DB_CONN, autocommit=True)
     cur = master_conn.cursor()
+    # a connection from a previous test can still be pooled, and SQL Server
+    # will not drop a database that anything is connected to
+    cur.execute(
+        "if db_id('test') is not null "
+        "alter database test set single_user with rollback immediate;"
+    )
     cur.execute("drop database if exists test;")
     cur.execute("create database test;")
     cur.close()
