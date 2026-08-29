@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-29
+
 - Adds catalog search: `hsql --catalog-search TERM` finds databases, schemas, relations, and columns whose names contain `TERM` ([#25](https://github.com/tconbeer/harlequin-odbc/issues/25)).
 - Now requires Harlequin 2.11 or higher.
 
@@ -40,7 +42,8 @@ All notable changes to this project will be documented in this file.
 
 - Adds a basic ODBC adapter.
 
-[unreleased]: https://github.com/tconbeer/harlequin-odbc/compare/0.4.0...HEAD
+[unreleased]: https://github.com/tconbeer/harlequin-odbc/compare/0.5.0...HEAD
+[0.5.0]: https://github.com/tconbeer/harlequin-odbc/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/tconbeer/harlequin-odbc/compare/0.3.1...0.4.0
 [0.3.1]: https://github.com/tconbeer/harlequin-odbc/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/tconbeer/harlequin-odbc/compare/0.2.0...0.3.0
