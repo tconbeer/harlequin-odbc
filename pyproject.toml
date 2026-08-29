@@ -9,7 +9,7 @@ license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "harlequin>=1.25,<3",
+    "harlequin>=2.11,<3",
     "pyodbc>=5.0,<6",
     # temp pin to allow prerelease versions
     "duckdb>=1.4.2.dev0; python_version>='3.14'"
@@ -20,7 +20,7 @@ odbc = "harlequin_odbc:HarlequinOdbcAdapter"
 
 [dependency-groups]
 dev = [
-    "harlequin==2.4.0",
+    "harlequin==2.11.0",
     "ruff>=0.6,<1",
     "pytest>=7.4.3,<8",
     "mypy>=1.7.0,<2",

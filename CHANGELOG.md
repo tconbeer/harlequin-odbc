@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Adds catalog search: `hsql --catalog-search TERM` finds databases, schemas, relations, and columns whose names contain `TERM` ([#25](https://github.com/tconbeer/harlequin-odbc/issues/25)).
+- Now requires Harlequin 2.11 or higher.
+
 ## [0.4.0] - 2025-10-29
 
 - Drops support for Python 3.9; adds support for Python 3.14

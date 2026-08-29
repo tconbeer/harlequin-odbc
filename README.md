@@ -64,4 +64,20 @@ harlequin -a odbc 'Driver={ODBC Driver 18 for SQL Server};Server=tcp:harlequin-e
 
 The ODBC adapter does not accept other options.
 
+### Catalog search
+
+This adapter implements Harlequin's catalog search:
+
+```bash
+hsql --catalog-search customer_id -a odbc "${ODBC_CONN_STR}"
+```
+
+It matches a substring of a name, case-insensitively, at every level of the
+catalog. It uses your driver's ODBC catalog functions: one call for the
+databases, schemas, and relations, plus one per database for the columns.
+
+The column half hands the term to your driver as a search pattern, so a
+case-sensitive driver can miss a column. Every level above a column is matched by
+this adapter, and is always case-insensitive.
+
 For more information, see the [Harlequin Docs](https://harlequin.sh/docs/odbc/index).

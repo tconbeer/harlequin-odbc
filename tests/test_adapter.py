@@ -26,6 +26,10 @@ def test_plugin_discovery() -> None:
     assert adapter_cls == HarlequinOdbcAdapter
 
 
+def test_implements_catalog_search() -> None:
+    assert HarlequinOdbcAdapter.IMPLEMENTS_CATALOG_SEARCH is True
+
+
 def test_connect() -> None:
     conn = HarlequinOdbcAdapter(conn_str=(CONN_STR,)).connect()
     assert isinstance(conn, HarlequinConnection)
