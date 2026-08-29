@@ -4,8 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- Adds support for Harlequin's catalog search: `hsql --catalog-search TERM` now finds databases, schemas, relations, and columns whose names contain `TERM`, without walking the catalog ([#25](https://github.com/tconbeer/harlequin-odbc/issues/25)).
-- This adapter now requires Harlequin 2.11 or higher.
+- Adds catalog search: `hsql --catalog-search TERM` finds databases, schemas, relations, and columns whose names contain `TERM` ([#25](https://github.com/tconbeer/harlequin-odbc/issues/25)).
+- Now requires Harlequin 2.11 or higher.
 
 ## [0.4.0] - 2025-10-29
 
