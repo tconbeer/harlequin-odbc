@@ -125,8 +125,5 @@ jobs:
           for id in $(docker ps -aq); do docker logs "$id" 2>&1 | tail -n 30; done
           exit 1
 
-      # A test that blocks on a lock would otherwise sit there until the job
-      # times out with nothing to read; interrupting pytest makes it name the
-      # test it was on and exit.
       - name: Run tests
-        run: timeout --signal=INT 420 uv run --no-sync pytest -v
+        run: uv run --no-sync pytest
