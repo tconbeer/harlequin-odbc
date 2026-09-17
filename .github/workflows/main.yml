@@ -19,6 +19,7 @@ jobs:
   static:
     name: Static Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out Repo
         uses: actions/checkout@v7
@@ -48,6 +49,7 @@ jobs:
   test:
     name: Python ${{ matrix.py }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     # tests/test_adapter.py reads this at import time, and the wait below
     # connects with it.
@@ -123,5 +125,8 @@ jobs:
           for id in $(docker ps -aq); do docker logs "$id" 2>&1 | tail -n 30; done
           exit 1
 
+      # A test that blocks on a lock would otherwise sit there until the job
+      # times out with nothing to read; faulthandler dumps every thread's stack
+      # and names it.
       - name: Run tests
-        run: uv run --no-sync pytest
+        run: uv run --no-sync pytest -v --faulthandler-timeout=120
