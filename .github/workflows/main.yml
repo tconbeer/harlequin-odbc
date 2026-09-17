@@ -126,7 +126,8 @@ jobs:
           exit 1
 
       # A test that blocks on a lock would otherwise sit there until the job
-      # times out with nothing to read; faulthandler dumps every thread's stack
-      # and names it.
+      # times out with nothing to read. faulthandler dumps every thread's stack
+      # after two minutes, and the interrupt after seven makes pytest report
+      # where it was and exit.
       - name: Run tests
-        run: uv run --no-sync pytest -v --faulthandler-timeout=120
+        run: timeout --signal=INT 420 uv run --no-sync pytest -v --faulthandler-timeout=120
