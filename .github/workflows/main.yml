@@ -65,7 +65,7 @@ jobs:
         image: mcr.microsoft.com/mssql/server:2019-latest
         env:
           ACCEPT_EULA: Y
-          MSSQL_SA_PASSWORD: for-testing
+          MSSQL_SA_PASSWORD: For-Testing1
         ports:
           - 1433:1433
 
@@ -101,19 +101,23 @@ jobs:
             sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
           fi
 
-      # SQL Server takes a while to come up, and a container that refused its
-      # password never will -- so dump the service's log rather than time out
-      # silently.
+      # SQL Server takes a while to accept logins, and a container that
+      # refused its password never will -- so the wait is bounded, and says
+      # which of the two happened instead of running until the job times out.
       - name: Wait for SQL Server
+        env:
+          MASTER_CONN: "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=master;Uid=sa;Pwd={For-Testing1};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"
         run: |
-          for _ in $(seq 1 30); do
-            if uv run --no-sync python -c "import pyodbc; pyodbc.connect('Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=master;Uid=sa;Pwd={for-testing};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;').close()" 2>/dev/null; then
+          deadline=$((SECONDS + 150))
+          while (( SECONDS < deadline )); do
+            if timeout 20 uv run --no-sync python -c "import pyodbc, sys; pyodbc.connect(sys.argv[1]).close()" "$MASTER_CONN" 2>/tmp/sql-server.err; then
               exit 0
             fi
             sleep 5
           done
           echo "::error::SQL Server never accepted a connection."
-          for id in $(docker ps -aq); do docker logs "$id" 2>&1 | tail -n 20; done
+          tail -n 5 /tmp/sql-server.err
+          for id in $(docker ps -aq); do docker logs "$id" 2>&1 | tail -n 30; done
           exit 1
 
       - name: Run tests

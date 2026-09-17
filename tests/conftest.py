@@ -10,8 +10,8 @@ from harlequin_odbc.adapter import (
     HarlequinOdbcConnection,
 )
 
-MASTER_DB_CONN = "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=master;Uid=sa;Pwd={for-testing};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"  # noqa: E501
-TEST_DB_CONN = "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=test;Uid=sa;Pwd={for-testing};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"  # noqa: E501
+MASTER_DB_CONN = "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=master;Uid=sa;Pwd={For-Testing1};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"  # noqa: E501
+TEST_DB_CONN = "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=test;Uid=sa;Pwd={For-Testing1};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"  # noqa: E501
 
 
 @pytest.fixture
