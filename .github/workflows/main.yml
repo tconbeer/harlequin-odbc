@@ -1,0 +1,129 @@
+name: Lint and Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+# will cancel previous workflows triggered by the same event and for the same ref for PRs or same SHA otherwise
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ contains(github.event_name, 'pull_request') && github.event.pull_request.head.ref || github.sha }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  static:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out Repo
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: "0.12.13"
+          enable-cache: true
+
+      - name: Install python dependencies
+        run: uv sync --locked
+
+      - name: Run analysis
+        run: |
+          uv run --no-sync ruff format . --diff
+          uv run --no-sync ruff check .
+          uv run --no-sync mypy --no-incremental
+
+  test:
+    name: Python ${{ matrix.py }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # tests/test_adapter.py reads this at import time, and the wait below
+    # connects with it.
+    env:
+      ODBC_CONN_STR: "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=master;Uid=sa;Pwd={For-Testing1};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"
+    strategy:
+      fail-fast: false
+      matrix:
+        py:
+          - "3.14"
+          - "3.13"
+          - "3.12"
+          - "3.11"
+          - "3.10"
+
+    # The same SQL Server docker-compose.yml serves locally; the fixtures drop
+    # and create the test database on every test, so they need sa.
+    services:
+      db:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: For-Testing1
+        ports:
+          - 1433:1433
+
+    steps:
+      - name: Check out Repo
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.py }}
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.py }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.1.0
+        with:
+          version: "0.12.13"
+          python-version: ${{ matrix.py }}
+          enable-cache: true
+
+      - name: Install python dependencies
+        run: uv sync --locked
+
+      # pyodbc needs a driver to talk to, and the runner image does not always
+      # carry one.
+      - name: Install the SQL Server ODBC driver
+        run: |
+          if ! odbcinst -q -d | grep -q "ODBC Driver 18 for SQL Server"; then
+            curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc > /dev/null
+            curl -fsSL "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list" | sudo tee /etc/apt/sources.list.d/mssql-release.list > /dev/null
+            sudo apt-get update
+            sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+          fi
+
+      # SQL Server takes a while to accept logins, and a container that
+      # refused its password never will -- so the wait is bounded, and says
+      # which of the two happened instead of running until the job times out.
+      - name: Wait for SQL Server
+        run: |
+          deadline=$((SECONDS + 150))
+          while (( SECONDS < deadline )); do
+            if timeout 20 uv run --no-sync python -c "import pyodbc, sys; pyodbc.connect(sys.argv[1]).close()" "$ODBC_CONN_STR" 2>/tmp/sql-server.err; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::SQL Server never accepted a connection."
+          tail -n 5 /tmp/sql-server.err
+          for id in $(docker ps -aq); do docker logs "$id" 2>&1 | tail -n 30; done
+          exit 1
+
+      - name: Run tests
+        run: uv run --no-sync pytest

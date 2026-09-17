@@ -5,7 +5,10 @@ services:
     restart: always
     environment:
       ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: for-testing
+      # SQL Server refuses to start unless the password it is given is at
+      # least eight characters from three of: uppercase, lowercase, digits,
+      # symbols.
+      MSSQL_SA_PASSWORD: For-Testing1
     volumes:
       - ./sqlserver_data/data:/var/opt/mssql/data
       - ./sqlserver_data/log:/var/opt/mssql/log
