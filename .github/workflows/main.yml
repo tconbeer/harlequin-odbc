@@ -48,6 +48,11 @@ jobs:
   test:
     name: Python ${{ matrix.py }}
     runs-on: ubuntu-latest
+
+    # tests/test_adapter.py reads this at import time, and the wait below
+    # connects with it.
+    env:
+      ODBC_CONN_STR: "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=master;Uid=sa;Pwd={For-Testing1};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"
     strategy:
       fail-fast: false
       matrix:
@@ -105,12 +110,10 @@ jobs:
       # refused its password never will -- so the wait is bounded, and says
       # which of the two happened instead of running until the job times out.
       - name: Wait for SQL Server
-        env:
-          MASTER_CONN: "Driver={ODBC Driver 18 for SQL Server};Server=tcp:localhost,1433;Database=master;Uid=sa;Pwd={For-Testing1};Encrypt=yes;TrustServerCertificate=yes;Connection Timeout=5;"
         run: |
           deadline=$((SECONDS + 150))
           while (( SECONDS < deadline )); do
-            if timeout 20 uv run --no-sync python -c "import pyodbc, sys; pyodbc.connect(sys.argv[1]).close()" "$MASTER_CONN" 2>/tmp/sql-server.err; then
+            if timeout 20 uv run --no-sync python -c "import pyodbc, sys; pyodbc.connect(sys.argv[1]).close()" "$ODBC_CONN_STR" 2>/tmp/sql-server.err; then
               exit 0
             fi
             sleep 5
