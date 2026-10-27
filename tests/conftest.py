@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Generator
 
 import pyodbc
@@ -31,3 +32,26 @@ def connection() -> Generator[HarlequinOdbcConnection, None, None]:
     conn = HarlequinOdbcAdapter(conn_str=(TEST_DB_CONN,)).connect()
     yield conn
     conn.close()
+
+
+@pytest.fixture
+def quoted_database_name() -> Generator[str, None, None]:
+    """A database whose name needs quoting, dropped afterward."""
+    database_name = f"harlequin odbc \"q]'.; {uuid.uuid4().hex[:8]}"
+    master_conn = pyodbc.connect(MASTER_DB_CONN, autocommit=True)
+    master_cur = master_conn.cursor()
+    master_cur.execute(
+        "declare @s nvarchar(max) = N'create database ' + quotename(?); exec(@s)",
+        database_name,
+    )
+    yield database_name
+    master_cur.execute(
+        "if db_id(?) is not null begin "
+        "declare @s nvarchar(max) = N'alter database ' + quotename(?) "
+        "+ N' set single_user with rollback immediate; drop database ' "
+        "+ quotename(?); exec(@s) end",
+        database_name,
+        database_name,
+        database_name,
+    )
+    master_conn.close()
