@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Bug Fixes
 
-- Data Catalog interactions and column listings now work for names containing quotes, `_`, or `%`, and quote identifiers with the character your ODBC driver reports (e.g., backticks for MySQL) ([tconbeer/harlequin#1209](https://github.com/tconbeer/harlequin/issues/1209)).
+- Data Catalog interactions and column listings now work for names containing quotes, `_`, or `%`, and quote identifiers with the character your ODBC driver reports ([tconbeer/harlequin#1209](https://github.com/tconbeer/harlequin/issues/1209)).
 
 ## [0.5.0] - 2026-08-29
 
