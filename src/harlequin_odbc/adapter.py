@@ -30,6 +30,7 @@ from harlequin_odbc.catalog import (
     SchemaCatalogItem,
 )
 from harlequin_odbc.cli_options import ODBC_OPTIONS
+from harlequin_odbc.quoting import IdentifierQuoting, escape_search_pattern
 
 if TYPE_CHECKING:
     pass
@@ -115,6 +116,7 @@ class HarlequinOdbcConnection(HarlequinConnection):
             raise HarlequinConnectionError(
                 msg=str(e), title="Harlequin could not connect to your database."
             ) from e
+        self.identifier_quoting = IdentifierQuoting.from_connection(self.conn)
 
     def execute(self, query: str) -> HarlequinOdbcCursor | None:
         try:
@@ -280,16 +282,10 @@ class HarlequinOdbcConnection(HarlequinConnection):
 
     def _contains_pattern(self, term: str) -> str:
         """The term as an ODBC pattern matching any name that contains it."""
-        escape = self._get_pattern_escape()
-        if not escape:
-            # with no escape character to use, % and _ in the term stay
-            # metacharacters, and the pattern matches more than was asked for;
-            # _search_columns() drops the extra when it matches again
-            return f"%{term}%"
-        escaped = term
-        for character in (escape, "%", "_"):
-            escaped = escaped.replace(character, f"{escape}{character}")
-        return f"%{escaped}%"
+        # with no escape character to use, % and _ in the term stay
+        # metacharacters, and the pattern matches more than was asked for;
+        # _search_columns() drops the extra when it matches again
+        return f"%{escape_search_pattern(term, self._get_pattern_escape())}%"
 
     def _get_pattern_escape(self) -> str:
         """The character this driver escapes pattern metacharacters with."""
@@ -329,9 +325,20 @@ class HarlequinOdbcConnection(HarlequinConnection):
     def _list_columns_in_relation(
         self, catalog_name: str, schema_name: str, rel_name: str
     ) -> list[tuple[str, str]]:
+        # SQLColumns reads the schema and table as patterns, so they are escaped,
+        # and the rows are matched again for a driver that has no escape
+        pattern_escape = self._get_pattern_escape()
         cur = self.aux_conn.cursor()
-        raw_cols = cur.columns(table=rel_name, catalog=catalog_name, schema=schema_name)
-        return [(col[3], col[5]) for col in raw_cols]
+        raw_cols = cur.columns(
+            table=escape_search_pattern(rel_name, pattern_escape),
+            catalog=catalog_name,
+            schema=escape_search_pattern(schema_name, pattern_escape),
+        )
+        return [
+            (col[3], col[5])
+            for col in raw_cols
+            if col[1] == schema_name and col[2] == rel_name
+        ]
 
     def get_completions(self) -> list[HarlequinCompletion]:
         return []
