@@ -11,7 +11,10 @@ DEFAULT_CATALOG_SEPARATOR = "."
 # SQLGetInfo(SQL_CATALOG_LOCATION) values, which pyodbc does not export
 SQL_CL_END = 2
 
-# a driver reports only the opening quote; these are the ones that differ
+# SQLGetInfo reports one quote character, which opens and closes a name.
+# SQL Server's brackets are the exception: they delimit a name whatever
+# QUOTED_IDENTIFIER is set to, while its driver reports " or a space.
+SQL_SERVER_DBMS_NAME = "Microsoft SQL Server"
 CLOSING_QUOTE_CHARS = {"[": "]"}
 
 
@@ -36,7 +39,7 @@ def escape_search_pattern(name: str, escape_char: str) -> str:
     return escaped_name
 
 
-def _get_string_info(connection: pyodbc.Connection, info_type: int) -> str:
+def get_string_info(connection: pyodbc.Connection, info_type: int) -> str:
     """A string SQLGetInfo value, or "" if the driver does not report one."""
     try:
         value: Any = connection.getinfo(info_type)
@@ -59,10 +62,13 @@ class IdentifierQuoting:
 
         A driver reports a space for its quote character when it does not
         support delimited identifiers, and "" for its separator when it does
-        not support catalogs.
+        not support catalogs. SQL Server always gets brackets.
         """
-        quote_char = _get_string_info(connection, pyodbc.SQL_IDENTIFIER_QUOTE_CHAR)
-        catalog_separator = _get_string_info(
+        if get_string_info(connection, pyodbc.SQL_DBMS_NAME) == SQL_SERVER_DBMS_NAME:
+            quote_char = "["
+        else:
+            quote_char = get_string_info(connection, pyodbc.SQL_IDENTIFIER_QUOTE_CHAR)
+        catalog_separator = get_string_info(
             connection, pyodbc.SQL_CATALOG_NAME_SEPARATOR
         )
         try:

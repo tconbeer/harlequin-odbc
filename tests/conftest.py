@@ -35,6 +35,16 @@ def connection() -> Generator[HarlequinOdbcConnection, None, None]:
 
 
 @pytest.fixture
+def connection_without_quoted_identifiers(
+    connection: HarlequinOdbcConnection,
+) -> Generator[HarlequinOdbcConnection, None, None]:
+    """A second connection to the test database, with QUOTED_IDENTIFIER off."""
+    conn = HarlequinOdbcAdapter(conn_str=(f"{TEST_DB_CONN}QuotedId=No;",)).connect()
+    yield conn
+    conn.close()
+
+
+@pytest.fixture
 def quoted_database_name() -> Generator[str, None, None]:
     """A database whose name needs quoting, dropped afterward."""
     database_name = f"harlequin odbc \"q]'.; {uuid.uuid4().hex[:8]}"

@@ -88,6 +88,7 @@ class FakeConnection:
     [
         (
             {
+                pyodbc.SQL_DBMS_NAME: "MySQL",
                 pyodbc.SQL_IDENTIFIER_QUOTE_CHAR: "`",
                 pyodbc.SQL_CATALOG_NAME_SEPARATOR: ".",
                 pyodbc.SQL_CATALOG_LOCATION: 1,
@@ -96,6 +97,7 @@ class FakeConnection:
         ),
         (
             {
+                pyodbc.SQL_DBMS_NAME: "Some DBMS",
                 pyodbc.SQL_IDENTIFIER_QUOTE_CHAR: "[",
                 pyodbc.SQL_CATALOG_NAME_SEPARATOR: "@",
                 pyodbc.SQL_CATALOG_LOCATION: SQL_CL_END,
@@ -107,6 +109,7 @@ class FakeConnection:
         (
             # a driver that supports neither delimited identifiers nor catalogs
             {
+                pyodbc.SQL_DBMS_NAME: "Some DBMS",
                 pyodbc.SQL_IDENTIFIER_QUOTE_CHAR: " ",
                 pyodbc.SQL_CATALOG_NAME_SEPARATOR: "",
                 pyodbc.SQL_CATALOG_LOCATION: 0,
@@ -114,7 +117,18 @@ class FakeConnection:
             IdentifierQuoting(),
         ),
         (
+            # SQL Server's driver reports a space when QuotedId=No
             {
+                pyodbc.SQL_DBMS_NAME: "Microsoft SQL Server",
+                pyodbc.SQL_IDENTIFIER_QUOTE_CHAR: " ",
+                pyodbc.SQL_CATALOG_NAME_SEPARATOR: ".",
+                pyodbc.SQL_CATALOG_LOCATION: 1,
+            },
+            IdentifierQuoting(quote_char="["),
+        ),
+        (
+            {
+                pyodbc.SQL_DBMS_NAME: pyodbc.Error("HY096"),
                 pyodbc.SQL_IDENTIFIER_QUOTE_CHAR: pyodbc.Error("HY096"),
                 pyodbc.SQL_CATALOG_NAME_SEPARATOR: pyodbc.Error("HY096"),
                 pyodbc.SQL_CATALOG_LOCATION: pyodbc.Error("HY096"),
@@ -129,7 +143,15 @@ def test_from_connection(info: dict[int, Any], expected: IdentifierQuoting) -> N
     assert IdentifierQuoting.from_connection(fake_connection) == expected
 
 
-def test_from_sql_server_connection(connection: HarlequinOdbcConnection) -> None:
-    assert connection.identifier_quoting == IdentifierQuoting(
-        quote_char='"', catalog_separator=".", catalog_at_end=False
+def test_from_sql_server_connection(
+    connection: HarlequinOdbcConnection,
+    connection_without_quoted_identifiers: HarlequinOdbcConnection,
+) -> None:
+    expected_quoting = IdentifierQuoting(
+        quote_char="[", catalog_separator=".", catalog_at_end=False
+    )
+
+    assert connection.identifier_quoting == expected_quoting
+    assert connection_without_quoted_identifiers.identifier_quoting == (
+        expected_quoting
     )

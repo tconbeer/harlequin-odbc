@@ -254,3 +254,52 @@ def test_drop_database(
     cur = connection.aux_conn.cursor()
     cur.execute("select db_id(?)", quoted_database_name)
     assert _rows(cur) == [(None,)]
+
+
+@pytest.mark.parametrize(
+    "pattern_escape",
+    [
+        # a driver with no escape character, whose patterns over-match
+        "",
+        # a driver that reports an escape character it does not honor
+        "!",
+    ],
+)
+def test_columns_belong_to_their_relation(
+    connection_with_quoted_names: HarlequinOdbcConnection, pattern_escape: str
+) -> None:
+    conn = connection_with_quoted_names
+    conn._pattern_escape = pattern_escape
+
+    relation_items = {item.label: item for item in _relation_items(conn)}
+
+    for name in ("a_b", "p%q"):
+        columns = relation_items[name].fetch_children()
+        assert [column.label for column in columns] == ["marker", "filler"]
+
+
+def test_interactions_without_quoted_identifiers(
+    connection_with_quoted_names: HarlequinOdbcConnection,
+    connection_without_quoted_identifiers: HarlequinOdbcConnection,
+    quoted_database_name: str,
+) -> None:
+    conn = connection_without_quoted_identifiers
+    # with QUOTED_IDENTIFIER off, a double-quoted name is a string
+    cur = conn.execute('select "not an identifier"')
+    assert cur is not None
+    assert _rows(cur) == [("not an identifier",)]
+
+    for item in _relation_items(conn):
+        driver = RecordingDriver()
+        show_select_star(item, driver)
+        [select_star] = driver.inserted_text
+        cur = conn.execute(select_star)
+        assert cur is not None
+        assert len(_rows(cur)) == 1
+
+    database_item = DatabaseCatalogItem.from_label(
+        label=quoted_database_name, connection=conn
+    )
+    execute_use_statement(database_item, RecordingDriver())
+    assert _current_database(conn) == quoted_database_name
+    conn.execute("use test")
