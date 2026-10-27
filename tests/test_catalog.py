@@ -139,8 +139,8 @@ def test_search_catalog_relations(
 
     [orders] = [result.item for result in results if result.item.label == "orders"]
     assert isinstance(orders, TableCatalogItem)
-    assert orders.query_name == '"srch"."orders"'
-    assert orders.qualified_identifier == '"test"."srch"."orders"'
+    assert orders.query_name == "[srch].[orders]"
+    assert orders.qualified_identifier == "[test].[srch].[orders]"
 
     [view] = [result.item for result in results if result.item.label == "orders_vw"]
     assert isinstance(view, ViewCatalogItem)
@@ -160,8 +160,8 @@ def test_search_catalog_columns(
     }
 
     [column] = [result.item for result in results if result.parents[-1] == "orders"]
-    assert column.query_name == '"customer_id"'
-    assert column.qualified_identifier == '"test"."srch"."orders"."customer_id"'
+    assert column.query_name == "[customer_id]"
+    assert column.qualified_identifier == "[test].[srch].[orders].[customer_id]"
     assert column.type_label == "int"
 
     # the amount column does not match, and its relation is not a hit, either

@@ -30,6 +30,11 @@ from harlequin_odbc.catalog import (
     SchemaCatalogItem,
 )
 from harlequin_odbc.cli_options import ODBC_OPTIONS
+from harlequin_odbc.quoting import (
+    IdentifierQuoting,
+    escape_search_pattern,
+    get_string_info,
+)
 
 if TYPE_CHECKING:
     pass
@@ -115,6 +120,7 @@ class HarlequinOdbcConnection(HarlequinConnection):
             raise HarlequinConnectionError(
                 msg=str(e), title="Harlequin could not connect to your database."
             ) from e
+        self.identifier_quoting = IdentifierQuoting.from_connection(self.conn)
 
     def execute(self, query: str) -> HarlequinOdbcCursor | None:
         try:
@@ -280,25 +286,17 @@ class HarlequinOdbcConnection(HarlequinConnection):
 
     def _contains_pattern(self, term: str) -> str:
         """The term as an ODBC pattern matching any name that contains it."""
-        escape = self._get_pattern_escape()
-        if not escape:
-            # with no escape character to use, % and _ in the term stay
-            # metacharacters, and the pattern matches more than was asked for;
-            # _search_columns() drops the extra when it matches again
-            return f"%{term}%"
-        escaped = term
-        for character in (escape, "%", "_"):
-            escaped = escaped.replace(character, f"{escape}{character}")
-        return f"%{escaped}%"
+        # with no escape character to use, % and _ in the term stay
+        # metacharacters, and the pattern matches more than was asked for;
+        # _search_columns() drops the extra when it matches again
+        return f"%{escape_search_pattern(term, self._get_pattern_escape())}%"
 
     def _get_pattern_escape(self) -> str:
         """The character this driver escapes pattern metacharacters with."""
         if self._pattern_escape is None:
-            try:
-                escape = self.aux_conn.getinfo(pyodbc.SQL_SEARCH_PATTERN_ESCAPE)
-            except Exception:
-                escape = ""
-            self._pattern_escape = escape if isinstance(escape, str) else ""
+            self._pattern_escape = get_string_info(
+                self.aux_conn, pyodbc.SQL_SEARCH_PATTERN_ESCAPE
+            )
         return self._pattern_escape
 
     def close(self) -> None:
@@ -329,9 +327,43 @@ class HarlequinOdbcConnection(HarlequinConnection):
     def _list_columns_in_relation(
         self, catalog_name: str, schema_name: str, rel_name: str
     ) -> list[tuple[str, str]]:
+        # SQLColumns reads the schema and table as patterns, so they are escaped,
+        # and the rows are matched again for a driver that has no escape
+        pattern_escape = self._get_pattern_escape()
+        escaped_schema_name = escape_search_pattern(schema_name, pattern_escape)
+        escaped_rel_name = escape_search_pattern(rel_name, pattern_escape)
+        columns = self._fetch_columns(
+            catalog_name, schema_name, rel_name, escaped_schema_name, escaped_rel_name
+        )
+        patterns_were_escaped = (escaped_schema_name, escaped_rel_name) != (
+            schema_name,
+            rel_name,
+        )
+        if columns or not patterns_were_escaped:
+            return columns
+        # a driver can report an escape character that it then does not honor
+        return self._fetch_columns(
+            catalog_name, schema_name, rel_name, schema_name, rel_name
+        )
+
+    def _fetch_columns(
+        self,
+        catalog_name: str,
+        schema_name: str,
+        rel_name: str,
+        schema_pattern: str,
+        rel_pattern: str,
+    ) -> list[tuple[str, str]]:
+        """The columns SQLColumns lists for the patterns, in the named relation."""
         cur = self.aux_conn.cursor()
-        raw_cols = cur.columns(table=rel_name, catalog=catalog_name, schema=schema_name)
-        return [(col[3], col[5]) for col in raw_cols]
+        raw_cols = cur.columns(
+            table=rel_pattern, catalog=catalog_name, schema=schema_pattern
+        )
+        return [
+            (col[3], col[5])
+            for col in raw_cols
+            if col[1] == schema_name and col[2] == rel_name
+        ]
 
     def get_completions(self) -> list[HarlequinCompletion]:
         return []

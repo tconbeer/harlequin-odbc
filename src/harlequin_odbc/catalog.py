@@ -13,9 +13,17 @@ from harlequin_odbc.interactions import (
     insert_columns_at_cursor,
     show_select_star,
 )
+from harlequin_odbc.quoting import IdentifierQuoting
 
 if TYPE_CHECKING:
     from harlequin_odbc.adapter import HarlequinOdbcConnection
+
+
+def _quoting_for(connection: "HarlequinOdbcConnection" | None) -> IdentifierQuoting:
+    """The connection's quoting rules, or the ANSI ones without a connection."""
+    if connection is None:
+        return IdentifierQuoting()
+    return connection.identifier_quoting
 
 
 @dataclass
@@ -29,11 +37,12 @@ class ColumnCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
         label: str,
         type_label: str,
     ) -> "ColumnCatalogItem":
-        column_qualified_identifier = f'{parent.qualified_identifier}."{label}"'
-        column_query_name = f'"{label}"'
+        quoting = _quoting_for(parent.connection)
         return cls(
-            qualified_identifier=column_qualified_identifier,
-            query_name=column_query_name,
+            qualified_identifier=quoting.qualified(
+                parent.db_label, parent.schema_label, parent.label, label
+            ),
+            query_name=quoting.identifier(label),
             label=label,
             type_label=type_label,
             connection=parent.connection,
@@ -70,9 +79,10 @@ class RelationCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
         }
 
         item_class = rel_type_map.get(rel_type, TableCatalogItem)
+        quoting = _quoting_for(connection)
         return item_class(
-            qualified_identifier=f'"{db_label}"."{schema_label}"."{label}"',
-            query_name=f'"{schema_label}"."{label}"',
+            qualified_identifier=quoting.qualified(db_label, schema_label, label),
+            query_name=quoting.qualified(None, schema_label, label),
             label=label,
             schema_label=schema_label,
             db_label=db_label,
@@ -138,12 +148,12 @@ class SchemaCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
         connection: "HarlequinOdbcConnection",
         children: list[CatalogItem] | None = None,
     ) -> "SchemaCatalogItem":
-        schema_identifier = f'"{label}"'
+        quoting = _quoting_for(connection)
         if children is None:
             children = []
         return cls(
-            qualified_identifier=f'"{db_label}".{schema_identifier}',
-            query_name=schema_identifier,
+            qualified_identifier=quoting.qualified(db_label, label),
+            query_name=quoting.identifier(label),
             label=label,
             db_label=db_label,
             type_label="sch",
@@ -166,7 +176,7 @@ class DatabaseCatalogItem(InteractiveCatalogItem["HarlequinOdbcConnection"]):
         connection: "HarlequinOdbcConnection",
         children: list[CatalogItem] | None = None,
     ) -> "DatabaseCatalogItem":
-        database_identifier = f'"{label}"'
+        database_identifier = _quoting_for(connection).identifier(label)
         if children is None:
             children = []
         return cls(

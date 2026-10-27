@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Data Catalog interactions and column listings now work for names containing quotes, `_`, or `%`, and quote identifiers with the character your ODBC driver reports ([tconbeer/harlequin#1209](https://github.com/tconbeer/harlequin/issues/1209)).
+
 ## [0.5.0] - 2026-08-29
 
 - Adds catalog search: `hsql --catalog-search TERM` finds databases, schemas, relations, and columns whose names contain `TERM` ([#25](https://github.com/tconbeer/harlequin-odbc/issues/25)).
